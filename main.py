@@ -1,44 +1,56 @@
 from database import DatabaseFacade
-from schema import Table, ColumnFactory
-from migration import Migration
-from crud import CRUDContext, CreateOperation, ReadOperation, UpdateOperation, DeleteOperation
+from decorators import table, ColumnFactory
+from model import Record
+from crud import CommandInvoker
 
-# Inicjalizacja bazy danych
 db_facade = DatabaseFacade()
-db_facade.configure("example1.db")
+db_facade.configure("db.db")
+connection = db_facade.connect()
+invoker = CommandInvoker()
 
-# Tworzymy tabelę "users"
-user_table = Table("users")
-user_table.add_column(ColumnFactory.create_integer_column("id", primary_key=True))
-user_table.add_column(ColumnFactory.create_string_column("name", length=50))
-user_table.add_column(ColumnFactory.create_string_column("email", length=100))
-db_facade.execute_query(str(user_table))  # Tworzymy tabelę
 
-# Migracja - dodanie nowej kolumny
-migration = Migration(db_facade)
-migration.create_migrations_table()
+@table("users")
+class User(Record):
+    @ColumnFactory.create_integer_column("id", primary_key=True)
+    def id(self): pass
 
-# Sprawdzamy, czy kolumna 'age' już istnieje
-if not migration.column_exists("users", "age"):
-    migration.apply("ALTER TABLE users ADD COLUMN age INTEGER")  # Dodajemy kolumnę 'age'
+    @ColumnFactory.create_string_column("name", length=50, not_null=True)
+    def name(self): pass
 
-# Operacje CRUD
-crud = CRUDContext(CreateOperation())
-crud.execute(db_facade.connect(), {
-    "table": "users",
-    "fields": ["name", "email"],
-    "values": ["Alice", "alice@example.com"]
-})
+    @ColumnFactory.create_string_column("email", length=100, not_null=True)
+    def email(self): pass
 
-# Odczyt użytkowników
-crud.set_strategy(ReadOperation())
-users = crud.execute(db_facade.connect(), {
-    "table": "users",
-    "fields": ["id", "name", "email"],
-    "condition": "age IS NULL"
-})
 
-print(users)  # Wypisujemy użytkowników
+User.create_table_in_db(db_facade)
 
-# Zakończenie
-db_facade.pool.get_connection().close()
+new_user = User(name="Ala", email="a@a.com")
+new_user.save(connection, invoker)
+
+new_user_2 = User(name="Ewa", email="w@w.com")
+new_user_2.save(connection, invoker)
+
+print("Select names:")
+users = User.select("name", connection=connection, invoker=invoker).execute()
+for user in users:
+    print(user._data)
+
+print("Select everything:")
+users = User.select(connection=connection, invoker=invoker).execute()
+for user in users:
+    print(user._data)
+
+new_user._data["email"] = "alice@gmail.com"
+new_user.save(connection, invoker)
+
+print("After changing Alice's email:")
+users = User.select(connection=connection, invoker=invoker).execute()
+for user in users:
+    print(user._data)
+
+new_user.delete(connection, invoker)
+
+print("After deleting Alice ):")
+users = User.select(connection=connection, invoker=invoker).execute()
+for user in users:
+    print(user._data)
+

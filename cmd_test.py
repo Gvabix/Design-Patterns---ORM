@@ -1,7 +1,9 @@
+from msilib import Table
+
 from crud import CreateCommand, ReadCommand, UpdateCommand, DeleteCommand
 from crud import CommandInvoker
 from database import DatabaseFacade
-from schema import Table, ColumnFactory
+from decorators import ColumnFactory
 
 # Example usage
 db_facade = DatabaseFacade()
