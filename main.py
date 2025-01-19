@@ -4,7 +4,7 @@ from model import Record
 from crud import CommandInvoker
 
 db_facade = DatabaseFacade()
-db_facade.configure("db.db")
+db_facade.configure("db3.db")
 connection = db_facade.connect()
 invoker = CommandInvoker()
 
@@ -32,25 +32,25 @@ new_user_2.save(connection, invoker)
 print("Select names:")
 users = User.select("name", connection=connection, invoker=invoker).execute()
 for user in users:
-    print(user._data)
+    print(str(user))
 
 print("Select everything:")
 users = User.select(connection=connection, invoker=invoker).execute()
 for user in users:
-    print(user._data)
+    print(str(user))
 
-new_user._data["email"] = "alice@gmail.com"
+new_user.email = "alice@gmail.com"
 new_user.save(connection, invoker)
 
 print("After changing Alice's email:")
 users = User.select(connection=connection, invoker=invoker).execute()
 for user in users:
-    print(user._data)
+    print(str(user))
 
 new_user.delete(connection, invoker)
 
 print("After deleting Alice ):")
 users = User.select(connection=connection, invoker=invoker).execute()
 for user in users:
-    print(user._data)
+    print(str(user))
 

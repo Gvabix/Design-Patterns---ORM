@@ -1,10 +1,12 @@
 from database import DatabaseFacade
 from crud import CreateCommand, ReadCommand, UpdateCommand, DeleteCommand
-
+from tabulate import tabulate
 
 class Record:
     _table_name = None
     _columns = {}
+    _connection = None
+    _invoker = None 
 
     def __init__(self, **kwargs):
         if self._table_name is None or not self._columns:
@@ -19,6 +21,45 @@ class Record:
 
         if "id" in self._data and self._data["id"] is not None:
             self._is_new = False
+
+    def __getattr__(self, name):
+        if name in self._columns:
+            return self._data.get(name, None)
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def __setattr__(self, name, value):
+        if name in {"_table_name", "_columns", "_data", "_is_new"}:
+            super().__setattr__(name, value)
+        elif name in self._columns:
+            self._data[name] = value
+        else:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def __str__(self):
+        if not self._data:
+            return f"<{self.__class__.__name__} (deleted)>"
+
+        fields = ", ".join(f"{key}={value}" for key, value in self._data.items())
+        return f"<{self.__class__.__name__} ({fields})>"
+
+    @classmethod
+    def configure(cls, connection, invoker):
+        """Ustawia connection i invoker dla klasy."""
+        cls._connection = connection
+        cls._invoker = invoker
+
+    @classmethod
+    def as_table(cls, records, fields=None):
+        """Generuje tabelę z listy rekordów za pomocą tabulate."""
+        if not records:
+            return f"No records to display for table '{cls._table_name}'."
+
+        fields = fields or list(cls._columns.keys())
+
+        rows = [[record._data.get(field, None) for field in fields] for record in records]
+
+        table = tabulate(rows, headers=fields, tablefmt="grid")
+        return table
 
     @classmethod
     def create_table_sql(cls):
@@ -44,7 +85,7 @@ class Record:
         query = cls.create_table_sql()
         db.execute_query(query)
 
-    def save(self, connection, invoker):
+    def save(self):
 
         if self._is_new:
             # CREATE
@@ -53,8 +94,8 @@ class Record:
                 "fields": [k for k in self._data.keys() if k != "id"],
                 "values": [v for k, v in self._data.items() if k != "id"]
             }
-            command = CreateCommand(connection, data)
-            self._data["id"] = invoker.execute_command(command)
+            command = CreateCommand(self._connection, data)
+            self._data["id"] = self._invoker.execute_command(command)
             self._is_new = False
         else:
             # UPDATE
@@ -64,10 +105,10 @@ class Record:
                 "values": [v for k, v in self._data.items() if k != "id"],
                 "condition": f"id = {self._data['id']}"
             }
-            command = UpdateCommand(connection, data)
-            invoker.execute_command(command)
+            command = UpdateCommand(self._connection, data)
+            self._invoker.execute_command(command)
 
-    def delete(self, connection, invoker):
+    def delete(self):
         """Usuwa rekord z bazy danych."""
         if "id" not in self._data or self._data["id"] is None:
             raise ValueError("Cannot delete a record without an ID.")
@@ -76,16 +117,16 @@ class Record:
             "table": self._table_name,
             "condition": f"id = {self._data['id']}"
         }
-        command = DeleteCommand(connection, data)
-        invoker.execute_command(command)
+        command = DeleteCommand(self._connection, data)
+        self._invoker.execute_command(command)
 
         self._data = None
 
     @classmethod
-    def select(cls, *fields, connection, invoker):
+    def select(cls, *fields):
         if not fields:
             fields = ["*"]
-        return QueryBuilder(cls, fields, connection, invoker)
+        return QueryBuilder(cls, fields, cls._connection, cls._invoker)
 
 
 class QueryBuilder:

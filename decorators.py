@@ -21,6 +21,40 @@ class ColumnFactory:
             return func
         return decorator
 
+    @staticmethod
+    def create_float_column(name, not_null=False, default=None):
+        def decorator(func):
+            func._column_name = name
+            func._column_type = "FLOAT"
+            func._primary_key = False
+            func._not_null = not_null
+            func._default = default
+            return func
+        return decorator
+
+    @staticmethod
+    def create_boolean_column(name, not_null=False, default=None):
+        def decorator(func):
+            func._column_name = name
+            func._column_type = "BOOLEAN"
+            func._primary_key = False
+            func._not_null = not_null
+            func._default = default
+            return func
+        return decorator
+
+    @staticmethod
+    def create_datetime_column(name, not_null=False, default=None):
+        def decorator(func):
+            func._column_name = name
+            func._column_type = "DATETIME"
+            func._primary_key = False
+            func._not_null = not_null
+            func._default = default
+            return func
+        return decorator
+
+
 
 def table(name):
     def decorator(cls):
