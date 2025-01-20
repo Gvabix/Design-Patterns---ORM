@@ -44,13 +44,11 @@ class Record:
 
     @classmethod
     def configure(cls, connection, invoker):
-        """Ustawia connection i invoker dla klasy."""
         cls._connection = connection
         cls._invoker = invoker
 
     @classmethod
     def as_table(cls, records, fields=None):
-        """Generuje tabelę z listy rekordów za pomocą tabulate."""
         if not records:
             return f"No records to display for table '{cls._table_name}'."
 
@@ -88,7 +86,6 @@ class Record:
     def save(self):
 
         if self._is_new:
-            # CREATE
             data = {
                 "table": self._table_name,
                 "fields": [k for k in self._data.keys() if k != "id"],
@@ -98,7 +95,6 @@ class Record:
             self._data["id"] = self._invoker.execute_command(command)
             self._is_new = False
         else:
-            # UPDATE
             data = {
                 "table": self._table_name,
                 "fields": [k for k in self._data.keys() if k != "id"],
@@ -109,7 +105,6 @@ class Record:
             self._invoker.execute_command(command)
 
     def delete(self):
-        """Usuwa rekord z bazy danych."""
         if "id" not in self._data or self._data["id"] is None:
             raise ValueError("Cannot delete a record without an ID.")
 

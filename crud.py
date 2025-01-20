@@ -38,12 +38,10 @@ class ReadCommand(CRUDCommand):
         return self.connection.execute(query).fetchall()
 
     def undo(self):
-        # Read operations don't need to be undone
         pass
 
 class UpdateCommand(CRUDCommand):
     def execute(self):
-        # Store the old values before updating
         select_query = f"SELECT {', '.join(self.data['fields'])} FROM {self.data['table']} WHERE {self.data['condition']}"
         self.last_executed = self.connection.execute(select_query).fetchall()
         
@@ -62,7 +60,6 @@ class UpdateCommand(CRUDCommand):
 
 class DeleteCommand(CRUDCommand):
     def execute(self):
-        # Store the deleted data for potential undo
         select_query = f"SELECT * FROM {self.data['table']} WHERE {self.data['condition']}"
         self.last_executed = self.connection.execute(select_query).fetchall()
         
