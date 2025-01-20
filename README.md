@@ -56,5 +56,5 @@ This file implements the Strategy design pattern for CRUD operations (Create, Re
 - Record: This is the base class for ORM models. It contains methods for interacting with database records (e.g., save, delete, select) and is responsible for creating the corresponding SQL queries.
 - User: This is an example of an ORM model class. It uses the @table decorator to define its associated table and the ColumnFactory to define its columns. The save method uses the CommandInvoker to execute the CreateCommand or UpdateCommand.
 
-  ### 4. **cmd_test.py*
+### 5. **test.ipynb*
 This file demonstrates how to use the ORM to interact with the database. It shows how to create a User table, insert records, update records, select data, and delete records. It also shows how the CommandInvoker can be used to execute and undo CRUD operations
